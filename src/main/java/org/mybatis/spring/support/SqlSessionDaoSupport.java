@@ -46,6 +46,8 @@ public abstract class SqlSessionDaoSupport extends DaoSupport {
    * Will automatically create SqlSessionTemplate for the given SqlSessionFactory.
    *
    * @param sqlSessionFactory a factory of SqlSession
+   *
+   * 在 MapperFactoryBean 配置中设置 sqlSessionFactory 的值
    */
   public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
     if (this.sqlSessionTemplate == null || sqlSessionFactory != this.sqlSessionTemplate.getSqlSessionFactory()) {

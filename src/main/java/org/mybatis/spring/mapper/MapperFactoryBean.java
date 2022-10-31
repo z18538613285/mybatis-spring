@@ -67,16 +67,35 @@ public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements Factor
 
   /**
    * {@inheritDoc}
+   * 在父类中 DaoSupport 中初始化方法 afterProperties ，
+   * 初始化包括对 DAO 配置的验证以及对 DAO 的初始化工作，其中 initDao方法是模板方法，
+   * 设计给子类进一步逻辑处理。
+   * 而 checkDaoConfig() 才是我们分析的重点。
    */
   @Override
   protected void checkDaoConfig() {
+    // 父类中对于sqlSession 不为空的验证。
     super.checkDaoConfig();
 
     notNull(this.mapperInterface, "Property 'mapperInterface' is required");
 
+    // sqlSession 作为根据接口创建映射器代理的接触类一定不可以为空，而 sqlSession 的初始化工作是在设定其 sqlSessionFactory 属性完成的
+
     Configuration configuration = getSqlSession().getConfiguration();
     if (this.addToConfig && !configuration.hasMapper(this.mapperInterface)) {
       try {
+        /**
+         * 在Mybatis实现过程中并没有手动调用 configuration.addMapper 方法，而是在映射问阿金读取过程中一旦
+         * 解析到如 <mapper namespace="Mapper.UserMapper"> ，便会自动进行类型映射的注册。那么 Spring中
+         * 为什么会把这个功能单独拿出来放在这里验证呢？是不是多此一举呢？
+         *
+         * 该方法其实是将 UserMapper注册到映射类型中，如果你可以保证这个接口一定存在对应的映射文件，
+         * 那么其实这个验证并没有必要，但是由于这个是我们自行决定的配置，无法保证这里配置的接口一定存在对应的
+         * 映射文件，所以这里非常有必要进行验证。
+         *
+         * 在执行此代码的时候，Mybatis会检查嵌入的映射接口是否存在对应的映射文件，如果没有会抛出异常，
+         * Spring 正是在用这种方式来完成接口对应的映射文件存在性验证。
+         */
         configuration.addMapper(this.mapperInterface);
       } catch (Exception e) {
         logger.error("Error while adding the mapper '" + this.mapperInterface + "' to configuration.", e);
@@ -89,9 +108,13 @@ public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements Factor
 
   /**
    * {@inheritDoc}
+   *
+   * 由于 MapperFactoryBean 实现了 FactoryBean 接口，所以当通过 getBean 方法获取
+   * 对应实例的时候其实是获取该类的 getObject函数返回的实例
    */
   @Override
   public T getObject() throws Exception {
+    // 这段代码正是我们在提供 Mybatis 独立使用功能的时候的一个代码调用。Spring 通过FactoryBean 进行了封装
     return getSqlSession().getMapper(this.mapperInterface);
   }
 

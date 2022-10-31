@@ -74,6 +74,12 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
  *
  * @see #setConfigLocation
  * @see #setDataSource
+ *
+ * @tips 根据这个类的层次结构，有两个接口 FactoryBean 和 InitializingBean
+ * InitializingBean：实现此接口的 bean 会在初始化时调用其 afterPropertiesSet 方法进行 bean的逻辑初始化。
+ * FactoryBean: 一旦某个 bean 实现此接口，那么通过 getBean 方法获取bean 时其实是
+ *    获取此类的 getObject() 返回的实例、
+ *
  */
 public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, InitializingBean, ApplicationListener<ApplicationEvent> {
 
@@ -397,6 +403,8 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 
   /**
    * {@inheritDoc}
+   *
+   * 初始化
    */
   @Override
   public void afterPropertiesSet() throws Exception {
@@ -417,6 +425,15 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
    *
    * @return SqlSessionFactory
    * @throws IOException if loading the config file failed
+   *
+   * @tips 从函数中可以看到，尽管我们还是习惯于将 Mybatis 的配置与 Spring 的配置独立出来，
+   * 但是，这并不代表 Spring 中的配置不支持直接配置。
+   * 也就是说，可以取消Mybatis的单独配置（configLocation），直接把属性写在Spring的SqlSessionFactoryBean中
+   *
+   * 配置文件还可以支持其它多种属性的配置，如configLocation、objectFactory、objectWrapperFactory、typeAliasesPackage、
+   * typeAliases、typeHandlersPackage、plugins、typeHandlers、transactionFactory、databaseIdProvider、mapperLocations。
+   *
+   *
    */
   protected SqlSessionFactory buildSqlSessionFactory() throws IOException {
 
@@ -529,18 +546,25 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
       LOGGER.debug(() -> "Property 'mapperLocations' was not specified or no matching resources found");
     }
 
+    /**
+     * 根据 configLocation 构造 XMLConfigBuilder 并进行解析，但是为了体现 Spring更强大的
+     * 兼容性，Spring还整合了 Mybatis 中其它属性的注入，并通过实例 configuration 来承载每一步所获取的信息并最终
+     * 使用 sqlSessionFactoryBuilder 实例根据解析到的 configuration 创建 SqlSessionFactory 实例
+     */
     return this.sqlSessionFactoryBuilder.build(targetConfiguration);
   }
 
   /**
    * {@inheritDoc}
+   *
+   * 由于 SqlSessionFactoryBean 实现了FactoryBean接口，所以当通过 getBean 方法获取对应实例时，
+   * 其实是获取该类的 getObject() 函数返回的实例，也就是获取初始化后的 sqlSessionFactory 属性。
    */
   @Override
   public SqlSessionFactory getObject() throws Exception {
     if (this.sqlSessionFactory == null) {
       afterPropertiesSet();
     }
-
     return this.sqlSessionFactory;
   }
 

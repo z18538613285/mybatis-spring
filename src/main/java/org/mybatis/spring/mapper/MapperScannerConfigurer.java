@@ -89,6 +89,12 @@ import org.springframework.util.StringUtils;
  *
  * @see MapperFactoryBean
  * @see ClassPathMapperScanner
+ *
+ * @tips 扫描特定的包，自动成批的创建映射器，被发现的映射器将会使用 Spring 对自动侦测组件默认的命令策略来命名。
+ * 也就是说如果没有发现注解，它就会使用映射器的非大写的非完全限定名。
+ * 但如果发现了 @Component 或者 JSR-330@Named 注解，就会获取名称
+ *
+ *
  */
 public class MapperScannerConfigurer implements BeanDefinitionRegistryPostProcessor, InitializingBean, ApplicationContextAware, BeanNameAware {
 
@@ -279,6 +285,8 @@ public class MapperScannerConfigurer implements BeanDefinitionRegistryPostProces
 
   /**
    * {@inheritDoc}
+   *
+   *
    */
   @Override
   public void afterPropertiesSet() throws Exception {
@@ -301,6 +309,7 @@ public class MapperScannerConfigurer implements BeanDefinitionRegistryPostProces
   @Override
   public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
     if (this.processPropertyPlaceHolders) {
+      // 属性处理
       processPropertyPlaceHolders();
     }
 
@@ -318,12 +327,18 @@ public class MapperScannerConfigurer implements BeanDefinitionRegistryPostProces
     scanner.scan(StringUtils.tokenizeToStringArray(this.basePackage, ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS));
   }
 
-  /*
+  /**
    * BeanDefinitionRegistries are called early in application startup, before
    * BeanFactoryPostProcessors. This means that PropertyResourceConfigurers will not have been
    * loaded and any property substitution of this class' properties will fail. To avoid this, find
    * any PropertyResourceConfigurers defined in the context and run them on this class' bean
    * definition. Then update the values.
+   *
+   * @tips BeanDefinitionRegistries 会在应用启动的时候调用，并且早于 BeanFactoryPostProcessors 的调用，
+   * 这就意味着 PropertyResourceConfigurers 还没有被加载所有对于属性文件的引用将会失效。
+   * 为了避免这种情况发生，手动找出定义的 PropertyResourceConfigurers 并进行提前调用以保证
+   * 对于属性的引用可以正常工作。
+   *
    */
   private void processPropertyPlaceHolders() {
     Map<String, PropertyResourceConfigurer> prcs = applicationContext.getBeansOfType(PropertyResourceConfigurer.class);
