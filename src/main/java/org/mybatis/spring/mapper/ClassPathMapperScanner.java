@@ -117,13 +117,23 @@ public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
     boolean acceptAllInterfaces = true;
 
     // if specified, use the given annotation and / or marker interface
+    // 对于 annotation 属性的处理
     if (this.annotationClass != null) {
+      /**
+       * 根据此属性生成过滤器以保证达到用户想要的效果，而封装此属性的过滤器就是 AnnotationTypeFilter。
+       * AnnotationTypeFilter 保证在扫描对应 Java 文件时只接受标记有注解为 annotationClass 的接口。
+       */
       addIncludeFilter(new AnnotationTypeFilter(this.annotationClass));
       acceptAllInterfaces = false;
     }
 
     // override AssignableTypeFilter to ignore matches on the actual marker interface
+    // 对 markerInterface 属性的处理
     if (this.markerInterface != null) {
+      /**
+       * 根据此属性生成过滤器以保证用户想要的效果，而封装此属性的过滤器就是实现 AssignableTypeFilter接口的局部类。
+       * 表示扫描过程中石油实现 markerInterface 接口的类才会被接受
+       */
       addIncludeFilter(new AssignableTypeFilter(this.markerInterface) {
         @Override
         protected boolean matchClassName(String className) {
@@ -135,11 +145,21 @@ public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
 
     if (acceptAllInterfaces) {
       // default include filter that accepts all classes
+      /**
+       * 在上面两个属性中如果存在其中任何属性，acceptAllInterfaces 的值将会改变，但是如果
+       * 用户没有设定以上两个属性，那么，Spring会为我们增加一个默认的过滤器实现 TypeFilter接口的
+       * 局部类，旨在接受所有接口文件
+       */
       addIncludeFilter((metadataReader, metadataReaderFactory) -> true);
     }
 
     // exclude package-info.java
+    // 不扫描 package-info.java
     addExcludeFilter((metadataReader, metadataReaderFactory) -> {
+      /**
+       * 对于命名为 package-info 的Java文件，默认不作为逻辑实现接口，将其排除掉，使用
+       * TypeFilter 接口的局部类实现 match 方法。
+       */
       String className = metadataReader.getClassMetadata().getClassName();
       return className.endsWith("package-info");
     });
@@ -154,6 +174,7 @@ public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
   public Set<BeanDefinitionHolder> doScan(String... basePackages) {
     Set<BeanDefinitionHolder> beanDefinitions = super.doScan(basePackages);
 
+    // 如果没有扫描到任何文件发出警告
     if (beanDefinitions.isEmpty()) {
       LOGGER.warn(() -> "No MyBatis mapper was found in '" + Arrays.toString(basePackages) + "' package. Please check your configuration.");
     } else {
@@ -176,6 +197,7 @@ public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
       definition.getConstructorArgumentValues().addGenericArgumentValue(beanClassName); // issue #59
       definition.setBeanClass(this.mapperFactoryBean.getClass());
 
+      // 开始构造 MapperFactoryBean 类型的 bean
       definition.getPropertyValues().add("addToConfig", this.addToConfig);
 
       boolean explicitFactoryUsed = false;
