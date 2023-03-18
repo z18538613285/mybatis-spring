@@ -36,9 +36,14 @@ import org.springframework.dao.support.DaoSupport;
  * @see #setSqlSessionFactory
  * @see #setSqlSessionTemplate
  * @see SqlSessionTemplate
+ *
+ * @tips 主要用途是，sqlSessionTemplate 属性的初始化，或者注入。
  */
 public abstract class SqlSessionDaoSupport extends DaoSupport {
 
+  /**
+   * SqlSessionTemplate 对象
+   */
   private SqlSessionTemplate sqlSessionTemplate;
 
   /**

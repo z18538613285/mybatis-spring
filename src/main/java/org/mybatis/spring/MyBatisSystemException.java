@@ -26,6 +26,8 @@ import org.springframework.dao.UncategorizedDataAccessException;
  * handle.
  *
  * @author Hunter Presnall
+ *
+ * @tips MyBatis 自定义的异常类。
  */
 @SuppressWarnings("squid:MaximumInheritanceDepth") // It is the intended design
 public class MyBatisSystemException extends UncategorizedDataAccessException {

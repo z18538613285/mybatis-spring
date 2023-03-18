@@ -39,8 +39,9 @@ import org.w3c.dom.Element;
  * @since 1.2.0
  * @see MapperFactoryBean
  * @see ClassPathMapperScanner
+ *
+ * @tips <mybatis:scan /> 的解析器
  */
-
 public class MapperScannerBeanDefinitionParser implements BeanDefinitionParser {
 
   private static final String ATTRIBUTE_BASE_PACKAGE = "base-package";
@@ -55,22 +56,27 @@ public class MapperScannerBeanDefinitionParser implements BeanDefinitionParser {
    */
   @Override
   public synchronized BeanDefinition parse(Element element, ParserContext parserContext) {
+    // 创建 ClassPathMapperScanner 对象
     ClassPathMapperScanner scanner = new ClassPathMapperScanner(parserContext.getRegistry());
     ClassLoader classLoader = scanner.getResourceLoader().getClassLoader();
     XmlReaderContext readerContext = parserContext.getReaderContext();
+    // 设置 resourceLoader 属性
     scanner.setResourceLoader(readerContext.getResourceLoader());
     try {
+      // 解析 annotation 属性
       String annotationClassName = element.getAttribute(ATTRIBUTE_ANNOTATION);
       if (StringUtils.hasText(annotationClassName)) {
         @SuppressWarnings("unchecked")
         Class<? extends Annotation> markerInterface = (Class<? extends Annotation>) classLoader.loadClass(annotationClassName);
         scanner.setAnnotationClass(markerInterface);
       }
+      // 解析 marker-interface 属性
       String markerInterfaceClassName = element.getAttribute(ATTRIBUTE_MARKER_INTERFACE);
       if (StringUtils.hasText(markerInterfaceClassName)) {
         Class<?> markerInterface = classLoader.loadClass(markerInterfaceClassName);
         scanner.setMarkerInterface(markerInterface);
       }
+      // 解析 name-generator 属性
       String nameGeneratorClassName = element.getAttribute(ATTRIBUTE_NAME_GENERATOR);
       if (StringUtils.hasText(nameGeneratorClassName)) {
         Class<?> nameGeneratorClass = classLoader.loadClass(nameGeneratorClassName);
@@ -80,12 +86,17 @@ public class MapperScannerBeanDefinitionParser implements BeanDefinitionParser {
     } catch (Exception ex) {
       readerContext.error(ex.getMessage(), readerContext.extractSource(element), ex.getCause());
     }
+    // 解析 template-ref 属性
     String sqlSessionTemplateBeanName = element.getAttribute(ATTRIBUTE_TEMPLATE_REF);
     scanner.setSqlSessionTemplateBeanName(sqlSessionTemplateBeanName);
+    // 解析 factory-ref 属性
     String sqlSessionFactoryBeanName = element.getAttribute(ATTRIBUTE_FACTORY_REF);
     scanner.setSqlSessionFactoryBeanName(sqlSessionFactoryBeanName);
+    // 注册 scanner 的过滤器
     scanner.registerFilters();
+    // 获得要扫描的包
     String basePackage = element.getAttribute(ATTRIBUTE_BASE_PACKAGE);
+    // 执行扫描
     scanner.scan(StringUtils.tokenizeToStringArray(basePackage, ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS));
     return null;
   }

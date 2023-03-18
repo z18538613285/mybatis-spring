@@ -53,8 +53,14 @@ import org.springframework.beans.factory.FactoryBean;
  */
 public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements FactoryBean<T> {
 
+  /**
+   * Mapper 接口
+   */
   private Class<T> mapperInterface;
 
+  /**
+   * 是否添加到 {@link Configuration} 中
+   */
   private boolean addToConfig = true;
 
   public MapperFactoryBean() {
@@ -75,12 +81,15 @@ public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements Factor
   @Override
   protected void checkDaoConfig() {
     // 父类中对于sqlSession 不为空的验证。
+    // <1> 校验 sqlSessionTemplate 非空
     super.checkDaoConfig();
 
+    // <2> 校验 mapperInterface 非空
     notNull(this.mapperInterface, "Property 'mapperInterface' is required");
 
     // sqlSession 作为根据接口创建映射器代理的接触类一定不可以为空，而 sqlSession 的初始化工作是在设定其 sqlSessionFactory 属性完成的
 
+    // <3> 添加 Mapper 接口到 configuration 中
     Configuration configuration = getSqlSession().getConfiguration();
     if (this.addToConfig && !configuration.hasMapper(this.mapperInterface)) {
       try {
@@ -115,6 +124,7 @@ public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements Factor
   @Override
   public T getObject() throws Exception {
     // 这段代码正是我们在提供 Mybatis 独立使用功能的时候的一个代码调用。Spring 通过FactoryBean 进行了封装
+    // 获得 Mapper 对象。注意，返回的是基于 Mapper 接口自动生成的代理对象。
     return getSqlSession().getMapper(this.mapperInterface);
   }
 

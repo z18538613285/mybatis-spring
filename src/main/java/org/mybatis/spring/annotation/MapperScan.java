@@ -66,10 +66,17 @@ import org.springframework.context.annotation.Import;
  * @since 1.2.0
  * @see MapperScannerRegistrar
  * @see MapperFactoryBean
+ *
+ * @tips 指定需要扫描的包，将包中符合的 Mapper 接口，注册成 beanClass 为 MapperFactoryBean
+ * 的 BeanDefinition 对象，从而实现创建 Mapper 对象。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Documented
+/**
+ * @Import 注解，负责资源的导入。如果导入的是一个 Java 类，
+ * 例如此处为 MapperScannerRegistrar 类，Spring 会将其注册成一个 Bean 对象。
+ */
 @Import(MapperScannerRegistrar.class)
 @Repeatable(MapperScans.class)
 public @interface MapperScan {
@@ -80,6 +87,8 @@ public @interface MapperScan {
    * {@code @MapperScan("org.my.pkg")} instead of {@code @MapperScan(basePackages = "org.my.pkg"})}.
    *
    * @return base package names
+   *
+   * @tips 和 {@link #basePackages()} 相同意思
    */
   String[] value() default {};
 
@@ -89,6 +98,8 @@ public @interface MapperScan {
    * ignored.
    *
    * @return base package names for scanning mapper interface
+   *
+   * @tips 扫描的包地址
    */
   String[] basePackages() default {};
 
@@ -119,6 +130,8 @@ public @interface MapperScan {
    * Note this can be combined with markerInterface.
    *
    * @return the annotation that the scanner will search for
+   *
+   * @tips 指定注解
    */
   Class<? extends Annotation> annotationClass() default Annotation.class;
 
@@ -131,6 +144,8 @@ public @interface MapperScan {
    * Note this can be combined with annotationClass.
    *
    * @return the parent that the scanner will search for
+   *
+   * @tips 指定接口
    */
   Class<?> markerInterface() default Class.class;
 
@@ -140,6 +155,8 @@ public @interface MapperScan {
    * have more than one datasource.
    *
    * @return the bean name of {@code SqlSessionTemplate}
+   *
+   * @tips 指向的 SqlSessionTemplate 的名字
    */
   String sqlSessionTemplateRef() default "";
 
@@ -149,6 +166,8 @@ public @interface MapperScan {
    * have more than one datasource.
    *
    * @return the bean name of {@code SqlSessionFactory}
+   *
+   * @tips 指向的 SqlSessionFactory 的名字
    */
   String sqlSessionFactoryRef() default "";
 
@@ -156,6 +175,8 @@ public @interface MapperScan {
    * Specifies a custom MapperFactoryBean to return a mybatis proxy as spring bean.
    *
    * @return the class of {@code MapperFactoryBean}
+   *
+   * @tips 可自定义 MapperFactoryBean 的实现类
    */
   Class<? extends MapperFactoryBean> factoryBean() default MapperFactoryBean.class;
 

@@ -94,7 +94,8 @@ import org.springframework.util.StringUtils;
  * 也就是说如果没有发现注解，它就会使用映射器的非大写的非完全限定名。
  * 但如果发现了 @Component 或者 JSR-330@Named 注解，就会获取名称
  *
- *
+ * 定义需要扫描的包，将包中符合的 Mapper 接口，注册成 beanClass 为 MapperFactoryBean
+ * 的 BeanDefinition 对象，从而实现创建 Mapper 对象。
  */
 public class MapperScannerConfigurer implements BeanDefinitionRegistryPostProcessor, InitializingBean, ApplicationContextAware, BeanNameAware {
 
@@ -308,11 +309,13 @@ public class MapperScannerConfigurer implements BeanDefinitionRegistryPostProces
    */
   @Override
   public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
+    // <1> 如果有属性占位符，则进行获得，例如 ${basePackage} 等等
     if (this.processPropertyPlaceHolders) {
       // 属性处理
       processPropertyPlaceHolders();
     }
 
+    // <2> 创建 ClassPathMapperScanner 对象，并设置其相关属性
     ClassPathMapperScanner scanner = new ClassPathMapperScanner(registry);
     scanner.setAddToConfig(this.addToConfig);
     scanner.setAnnotationClass(this.annotationClass);
@@ -323,7 +326,9 @@ public class MapperScannerConfigurer implements BeanDefinitionRegistryPostProces
     scanner.setSqlSessionTemplateBeanName(this.sqlSessionTemplateBeanName);
     scanner.setResourceLoader(this.applicationContext);
     scanner.setBeanNameGenerator(this.nameGenerator);
+    // 注册 scanner 过滤器
     scanner.registerFilters();
+    // 执行扫描
     scanner.scan(StringUtils.tokenizeToStringArray(this.basePackage, ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS));
   }
 
@@ -365,6 +370,7 @@ public class MapperScannerConfigurer implements BeanDefinitionRegistryPostProces
     }
   }
 
+  // 获得属性值，并转换成 String 类型
   private String updatePropertyValue(String propertyName, PropertyValues values) {
     PropertyValue property = values.getPropertyValue(propertyName);
 

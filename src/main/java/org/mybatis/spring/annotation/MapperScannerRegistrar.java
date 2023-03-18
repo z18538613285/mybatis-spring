@@ -48,6 +48,9 @@ import org.springframework.util.StringUtils;
  * @see MapperFactoryBean
  * @see ClassPathMapperScanner
  * @since 1.2.0
+ *
+ * @tips @MapperScann 的注册器，负责将扫描到的 Mapper 接口，注册成 beanClass 为
+ * MapperFactoryBean 的 BeanDefinition 对象，从而实现创建 Mapper 对象。
  */
 public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
 
@@ -66,20 +69,25 @@ public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, Re
    */
   @Override
   public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+    // <1> 获得 @MapperScan 注解信息
     AnnotationAttributes mapperScanAttrs = AnnotationAttributes
         .fromMap(importingClassMetadata.getAnnotationAttributes(MapperScan.class.getName()));
     if (mapperScanAttrs != null) {
+      // <2> 扫描包，将扫描到的 Mapper 接口，注册成 beanClass 为 MapperFactoryBean 的 BeanDefinition 对象
       registerBeanDefinitions(mapperScanAttrs, registry);
     }
   }
 
   void registerBeanDefinitions(AnnotationAttributes annoAttrs, BeanDefinitionRegistry registry) {
 
+    // <3.1> 创建 ClassPathMapperScanner 对象
     ClassPathMapperScanner scanner = new ClassPathMapperScanner(registry);
 
     // this check is needed in Spring 3.1
+    // <3.2> 设置 resourceLoader 属性到 scanner 中
     Optional.ofNullable(resourceLoader).ifPresent(scanner::setResourceLoader);
 
+    // <3.3> 获得 @(MapperScan 注解上的属性，设置到 scanner 中
     Class<? extends Annotation> annotationClass = annoAttrs.getClass("annotationClass");
     if (!Annotation.class.equals(annotationClass)) {
       scanner.setAnnotationClass(annotationClass);
@@ -103,23 +111,26 @@ public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, Re
     scanner.setSqlSessionTemplateBeanName(annoAttrs.getString("sqlSessionTemplateRef"));
     scanner.setSqlSessionFactoryBeanName(annoAttrs.getString("sqlSessionFactoryRef"));
 
+    // <4> 获得要扫描的包
     List<String> basePackages = new ArrayList<>();
     basePackages.addAll(
-        Arrays.stream(annoAttrs.getStringArray("value"))
+        Arrays.stream(annoAttrs.getStringArray("value")) // 包
             .filter(StringUtils::hasText)
             .collect(Collectors.toList()));
 
     basePackages.addAll(
-        Arrays.stream(annoAttrs.getStringArray("basePackages"))
+        Arrays.stream(annoAttrs.getStringArray("basePackages")) // 包
             .filter(StringUtils::hasText)
             .collect(Collectors.toList()));
 
     basePackages.addAll(
-        Arrays.stream(annoAttrs.getClassArray("basePackageClasses"))
+        Arrays.stream(annoAttrs.getClassArray("basePackageClasses")) // 类
             .map(ClassUtils::getPackageName)
             .collect(Collectors.toList()));
 
+    // <5> 注册 scanner 的过滤器
     scanner.registerFilters();
+    // <6> 执行扫描
     scanner.doScan(StringUtils.toStringArray(basePackages));
   }
 
@@ -134,9 +145,11 @@ public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, Re
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
         BeanDefinitionRegistry registry) {
+      // 获得 @MapperScans 注解信息
       AnnotationAttributes mapperScansAttrs = AnnotationAttributes
           .fromMap(importingClassMetadata.getAnnotationAttributes(MapperScans.class.getName()));
       if (mapperScansAttrs != null) {
+        // 遍历 @MapperScans 的值，调用 `#registerBeanDefinitions(mapperScanAttrs, registry)` 方法，循环扫描处理
         Arrays.stream(mapperScansAttrs.getAnnotationArray("value"))
             .forEach(mapperScanAttrs -> registerBeanDefinitions(mapperScanAttrs, registry));
       }

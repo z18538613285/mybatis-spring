@@ -52,6 +52,7 @@ import org.springframework.dao.InvalidDataAccessResourceUsageException;
  * @author Eduardo Macarron
  * 
  * @since 1.1.0
+ * @tips MyBatis 批量写入器。
  */
 public class MyBatisBatchItemWriter<T> implements ItemWriter<T>, InitializingBean {
 
@@ -59,10 +60,19 @@ public class MyBatisBatchItemWriter<T> implements ItemWriter<T>, InitializingBea
 
   private SqlSessionTemplate sqlSessionTemplate;
 
+  /**
+   * 语句编号
+   */
   private String statementId;
 
+  /**
+   * 是否校验
+   */
   private boolean assertUpdates = true;
 
+  /**
+   * 参数转换器
+   */
   private Converter<T, ?> itemToParameterConverter = new PassThroughConverter<>();
 
   /**
@@ -130,6 +140,7 @@ public class MyBatisBatchItemWriter<T> implements ItemWriter<T>, InitializingBea
 
   /**
    * {@inheritDoc}
+   * 将传入的 items 数组，执行一次批量操作，仅执行一次批量操作。
    */
   @Override
   public void write(final List<? extends T> items) {
@@ -137,18 +148,22 @@ public class MyBatisBatchItemWriter<T> implements ItemWriter<T>, InitializingBea
     if (!items.isEmpty()) {
       LOGGER.debug(() -> "Executing batch with " + items.size() + " items.");
 
+      // <1> 遍历 items 数组，提交到 sqlSessionTemplate 中
       for (T item : items) {
         sqlSessionTemplate.update(statementId, itemToParameterConverter.convert(item));
       }
 
+      // <2> 执行一次批量操作
       List<BatchResult> results = sqlSessionTemplate.flushStatements();
 
       if (assertUpdates) {
+        // 如果有多个返回结果，抛出 InvalidDataAccessResourceUsageException 异常
         if (results.size() != 1) {
           throw new InvalidDataAccessResourceUsageException("Batch execution returned invalid results. " +
               "Expected 1 but number of BatchResult objects returned was " + results.size());
         }
 
+        // <3> 遍历执行结果，若存在未更新的情况，则抛出 EmptyResultDataAccessException 异常
         int[] updateCounts = results.get(0).getUpdateCounts();
 
         for (int i = 0; i < updateCounts.length; i++) {
@@ -162,6 +177,7 @@ public class MyBatisBatchItemWriter<T> implements ItemWriter<T>, InitializingBea
     }
   }
 
+  // 实现 Converter 接口，直接返回自身。
   private static class PassThroughConverter<T> implements Converter<T, T> {
 
     @Override

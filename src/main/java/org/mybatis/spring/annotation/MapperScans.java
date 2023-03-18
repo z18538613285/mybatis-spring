@@ -34,6 +34,8 @@ import java.lang.annotation.Target;
  * @author Kazuki Shimizu
  * @since 2.0.0
  * @see MapperScan
+ *
+ * @tips 多 @MapperScan 的注解，功能是相同的。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

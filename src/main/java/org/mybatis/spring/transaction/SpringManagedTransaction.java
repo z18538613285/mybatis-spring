@@ -41,17 +41,29 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *
  * @author Hunter Presnall
  * @author Eduardo Macarron
+ *
+ * @tips Spring 托管事务的 Transaction 实现类。
  */
 public class SpringManagedTransaction implements Transaction {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SpringManagedTransaction.class);
-
+  /**
+   * DataSource 对象
+   */
   private final DataSource dataSource;
-
+  /**
+   * Connection 对象
+   */
   private Connection connection;
-
+  /**
+   * 当前连接是否处于事务中
+   *
+   * @see DataSourceUtils#isConnectionTransactional(Connection, DataSource)
+   */
   private boolean isConnectionTransactional;
-
+  /**
+   * 是否自动提交
+   */
   private boolean autoCommit;
 
   public SpringManagedTransaction(DataSource dataSource) {
@@ -61,10 +73,12 @@ public class SpringManagedTransaction implements Transaction {
 
   /**
    * {@inheritDoc}
+   * 获得连接。
    */
   @Override
   public Connection getConnection() throws SQLException {
     if (this.connection == null) {
+      // 如果连接不存在，获得连接
       openConnection();
     }
     return this.connection;
@@ -77,8 +91,14 @@ public class SpringManagedTransaction implements Transaction {
    * It also reads autocommit setting because when using Spring Transaction MyBatis
    * thinks that autocommit is always false and will always call commit/rollback
    * so we need to no-op that calls.
+   *
+   * @tips 比较有趣的是，此处获取连接，不是通过 DataSource#getConnection() 方法，而是
+   * 通过 org.springframework.jdbc.datasource.DataSourceUtils#getConnection(DataSource dataSource) 方法，
+   * 获得 Connection 对象。而实际上，基于 Spring Transaction 体系，如果此处正在事务中时，
+   * 已经有和当前线程绑定的 Connection 对象，就是存储在 ThreadLocal 中。
    */
   private void openConnection() throws SQLException {
+    // 获得连接
     this.connection = DataSourceUtils.getConnection(this.dataSource);
     this.autoCommit = this.connection.getAutoCommit();
     this.isConnectionTransactional = DataSourceUtils.isConnectionTransactional(this.connection, this.dataSource);
@@ -93,6 +113,7 @@ public class SpringManagedTransaction implements Transaction {
 
   /**
    * {@inheritDoc}
+   * 提交事务
    */
   @Override
   public void commit() throws SQLException {
@@ -104,6 +125,7 @@ public class SpringManagedTransaction implements Transaction {
 
   /**
    * {@inheritDoc}
+   * 回滚事务
    */
   @Override
   public void rollback() throws SQLException {
@@ -115,6 +137,11 @@ public class SpringManagedTransaction implements Transaction {
 
   /**
    * {@inheritDoc}
+   * 释放连接。
+   *
+   * 比较有趣的是，此处释放连接，不是通过 Connection#close() 方法，而是通过
+   * org.springframework.jdbc.datasource.DataSourceUtils#releaseConnection(Connection connection,DataSource dataSource)
+   * 方法，“释放”连接。但是，具体会不会关闭连接，根据当前线程绑定的 Connection 对象，是不是传入的 connection 参数。
    */
   @Override
   public void close() {

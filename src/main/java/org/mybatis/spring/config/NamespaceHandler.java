@@ -24,6 +24,8 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
  *
  * @see MapperScannerBeanDefinitionParser
  * @since 1.2.0
+ *
+ * @tips MyBatis 的 XML Namespace 的处理器。
  */
 public class NamespaceHandler extends NamespaceHandlerSupport {
 

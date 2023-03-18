@@ -35,6 +35,8 @@ import org.springframework.transaction.TransactionException;
  * first exception is translated.
  *
  * @author Eduardo Macarron
+ *
+ * @tips MyBatis 自定义的异常转换器。
  */
 public class MyBatisExceptionTranslator implements PersistenceExceptionTranslator {
 
